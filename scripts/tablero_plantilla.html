@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablero Eje Cafetero</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --accent:#6f4e37;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --accent:#c49a6c;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926; --accent:#c49a6c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:20px 24px 0;max-width:1280px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--ink-2);margin:0 0 16px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab{background:none;border:0;padding:10px 14px;font:inherit;color:var(--ink-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.theme{margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink-2);padding:4px 10px;font:inherit;cursor:pointer;align-self:center}
+main{max-width:1280px;margin:0 auto;padding:16px 24px 40px}
+.panel{display:none}.panel.on{display:block}
+.question{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;margin-bottom:16px}
+.question b{display:block;font-size:15px}
+.question span{color:var(--ink-2)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+@media (min-width:1100px){.kpis{grid-template-columns:repeat(6,1fr)}}
+@media (max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.kpi .l{color:var(--ink-2);font-size:12px}
+.kpi .v{font-size:26px;font-weight:600;margin-top:2px}
+.kpi .n{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;min-width:0}
+.card h3{margin:0 0 2px;font-size:14px}
+.card p.h{margin:0 0 10px;color:var(--ink-2);font-size:12px}
+.chart{position:relative;height:250px}
+.wide{grid-column:1/-1}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--grid)}
+th{color:var(--ink-2);font-weight:600}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.best td{font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.scroll{overflow-x:auto}
+.seg{display:flex;height:28px;border-radius:4px;overflow:hidden;gap:2px;margin:6px 0 10px}
+.seg div{min-width:2px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--ink-2);font-size:12px;margin-bottom:6px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:-1px}
+.note{color:var(--muted);font-size:12px;margin:8px 0 0}
+footer{color:var(--muted);font-size:12px;max-width:1280px;margin:0 auto;padding:0 24px 24px}
+@media (max-width:600px){header,main{padding-left:16px;padding-right:16px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tablero predictivo · Eje Cafetero</h1>
+  <p class="sub">Caldas · Risaralda · Quindío — dos modelos de Machine Learning con datos abiertos de datos.gov.co</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-p="saber">Proyecto 1 · Bajo desempeño Saber 11</button>
+    <button class="tab" role="tab" aria-selected="false" data-p="vial">Proyecto 2 · Siniestros viales fatales</button>
+    <button class="theme" id="themeBtn" type="button">Tema</button>
+  </div>
+</header>
+<main>
+  <!-- ================= SABER 11 ================= -->
+  <section class="panel on" id="p-saber">
+    <div class="question"><b>¿Qué estudiantes de grado 11 del Eje Cafetero tendrán bajo desempeño (puntaje global &lt; 220) en la prueba Saber 11?</b>
+      <span>Clasificación binaria · variable objetivo: <i>bajo_desempeno</i> · <span id="s-model"></span></span></div>
+    <div class="kpis" id="s-kpis"></div>
+    <div class="grid">
+      <div class="card"><h3>Bajo desempeño por estrato</h3><p class="h">% de estudiantes con puntaje global &lt; 220</p><div class="chart"><canvas id="s-estrato"></canvas></div></div>
+      <div class="card"><h3>Brechas: colegio, zona y conectividad</h3><p class="h">% de estudiantes con bajo desempeño</p><div class="chart"><canvas id="s-brechas"></canvas></div></div>
+      <div class="card"><h3>Bajo desempeño según educación de la madre</h3><p class="h">% de estudiantes con bajo desempeño</p><div class="chart"><canvas id="s-madre"></canvas></div></div>
+      <div class="card"><h3>Bajo desempeño por jornada</h3><p class="h">Sabatina y nocturna corresponden a educación de adultos</p><div class="chart"><canvas id="s-jornada"></canvas></div></div>
+      <div class="card wide"><h3>Municipios con mayor riesgo estimado (cohorte 2022)</h3>
+        <div class="legend"><span><span class="sw" style="background:var(--s1)"></span>Riesgo promedio estimado por el modelo</span><span><span class="sw" style="background:var(--s2)"></span>% real de bajo desempeño</span></div>
+        <div class="chart" style="height:300px"><canvas id="s-mun"></canvas></div></div>
+      <div class="card"><h3>Variables más influyentes</h3><p class="h">Importancia por permutación (pérdida de AUC)</p><div class="chart"><canvas id="s-imp"></canvas></div></div>
+      <div class="card"><h3>Segmentación de riesgo (estudiantes 2022)</h3><p class="h">Probabilidad: Alto ≥ 60 %, Medio 30–60 %, Bajo &lt; 30 %</p><div id="s-seg"></div>
+        <div class="chart" style="height:170px"><canvas id="s-hist"></canvas></div></div>
+      <div class="card wide"><h3>Comparación de modelos</h3><p class="h">CV 5-fold (2019–2021) vs. prueba temporal (2022)</p><div class="scroll"><table id="s-met"></table></div></div>
+      <div class="card wide"><h3>Colegios prioritarios para acompañamiento</h3><p class="h">Top 15 colegios (≥ 30 evaluados) por riesgo promedio estimado · lista que recibiría la Secretaría de Educación</p><div class="scroll"><table id="s-top"></table></div></div>
+    </div>
+  </section>
+
+  <!-- ================= VÍCTIMAS VIALES ================= -->
+  <section class="panel" id="p-vial">
+    <div class="question"><b>¿Qué víctimas de siniestros viales en el Eje Cafetero tienen mayor probabilidad de fallecer?</b>
+      <span>Clasificación binaria · variable objetivo: <i>fallecido</i> · <span id="v-model"></span></span></div>
+    <div class="kpis" id="v-kpis"></div>
+    <div class="grid">
+      <div class="card wide"><h3>Fallecidos en siniestros viales por año</h3><p class="h">Caldas, Risaralda y Quindío · 2026 con datos hasta julio</p><div class="chart"><canvas id="v-anual"></canvas></div></div>
+      <div class="card"><h3>Letalidad por departamento</h3><p class="h">% de víctimas que fallecen</p><div class="chart"><canvas id="v-depto"></canvas></div></div>
+      <div class="card"><h3>Letalidad por medio de transporte</h3><p class="h">% de víctimas que fallecen</p><div class="chart"><canvas id="v-medio"></canvas></div></div>
+      <div class="card"><h3>Letalidad por día de la semana</h3><p class="h">% de víctimas que fallecen</p><div class="chart"><canvas id="v-dia"></canvas></div></div>
+      <div class="card"><h3>Perfil de la víctima</h3><p class="h">% de víctimas que fallecen</p><div class="chart"><canvas id="v-perfil"></canvas></div></div>
+      <div class="card wide"><h3>Municipios con mayor letalidad</h3><p class="h">% de víctimas que fallecen (municipios con ≥ 300 víctimas registradas)</p><div class="chart" style="height:300px"><canvas id="v-mun"></canvas></div></div>
+      <div class="card"><h3>Variables más influyentes</h3><p class="h">Importancia por permutación (pérdida de AUC)</p><div class="chart"><canvas id="v-imp"></canvas></div></div>
+      <div class="card"><h3>Segmentación de riesgo (víctimas 2023–2026)</h3><p class="h">Puntaje de riesgo: Alto ≥ 0,6, Medio 0,3–0,6, Bajo &lt; 0,3</p><div id="v-seg"></div>
+        <div class="chart" style="height:170px"><canvas id="v-hist"></canvas></div></div>
+      <div class="card wide"><h3>Comparación de modelos</h3><p class="h">CV 5-fold (2010–2022) vs. prueba temporal (2023–2026)</p><div class="scroll"><table id="v-met"></table></div></div>
+      <div class="card wide"><h3>Perfiles de mayor riesgo para campañas y controles</h3><p class="h">Combinaciones con ≥ 40 víctimas en 2023–2026, ordenadas por puntaje de riesgo del modelo</p><div class="scroll"><table id="v-top"></table></div>
+        <p class="note">El puntaje de riesgo ordena perfiles (el modelo se entrenó con pesos balanceados); la letalidad real es la proporción observada.</p></div>
+    </div>
+  </section>
+</main>
+<footer>Fuentes: ICFES – Resultados Saber 11 (datos.gov.co, kgxf-xxbe) · Policía Nacional – Lesiones (72sg-cybi) y homicidios (ha6j-pa2r) en accidente de tránsito.</footer>
+
+<script>
+const DATA = /*__DATA__*/;
+const MET = /*__MET__*/;
+
+const ES = {
+  cole_cod_dane_establecimiento:"Colegio (historial)", edad:"Edad", jornada_no_regular:"Jornada nocturna/sabatina",
+  estu_genero:"Género del estudiante", edu_max_padres:"Educación máx. de los padres", cole_mcpio_ubicacion:"Municipio del colegio",
+  extraedad:"Extraedad (≥ 19 años)", cole_jornada:"Jornada", fami_cuartoshogar:"Cuartos del hogar", fami_tienecomputador:"Tiene computador",
+  fami_estratovivienda:"Estrato", cole_naturaleza:"Oficial / no oficial", cole_area_ubicacion:"Zona urbana / rural",
+  indice_bienes:"Índice de bienes del hogar", conectividad:"Internet y computador", fami_educacionmadre:"Educación de la madre",
+  fami_educacionpadre:"Educación del padre", estrato_num:"Estrato (número)", cole_caracter:"Carácter del colegio", fami_tieneinternet:"Tiene internet",
+  departamento:"Departamento", genero:"Género", es_capital:"Ocurre en capital", medio:"Medio de transporte", municipio:"Municipio",
+  mes:"Mes", grupo_etario:"Grupo etario", puente_festivo:"Puente festivo", festivo:"Festivo", fin_de_semana:"Fin de semana",
+  dia_semana:"Día de la semana", temporada_vacaciones:"Temporada de vacaciones", dia_quincena:"Día de quincena", usuario_vulnerable:"Moto o bicicleta",
+  "OFICIAL":"Oficial","NO OFICIAL":"No oficial","RURAL":"Rural","URBANO":"Urbano","SABATINA":"Sabatina","NOCHE":"Noche","TARDE":"Tarde",
+  "UNICA":"Única","MAÑANA":"Mañana","COMPLETA":"Completa","CALDAS":"Caldas","QUINDIO":"Quindío","QUINDÍO":"Quindío","RISARALDA":"Risaralda",
+  "Secundaria (Bachillerato) incompleta":"Bachillerato incompleto","Secundaria (Bachillerato) completa":"Bachillerato completo",
+  "Técnica o tecnológica completa":"Técnica/tecnológica","Educación profesional completa":"Profesional"};
+const tr = s => ES[s] ?? s;
+const title = s => String(s).toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (n,d=0) => Number(n).toLocaleString("es-CO",{minimumFractionDigits:d, maximumFractionDigits:d});
+const charts = [];
+
+function kpis(id, items){
+  document.getElementById(id).innerHTML = items.map(([l,v,n]) =>
+    `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||""}</div></div>`).join("");
+}
+const axes = horizontal => ({
+  x:{grid:{display:horizontal, color:()=>css("--grid")}, border:{color:()=>css("--axis")}, ticks:{color:()=>css("--muted")}, beginAtZero:true},
+  y:{grid:{display:!horizontal, color:()=>css("--grid")}, border:{display:false}, ticks:{color:()=>css("--muted")}, beginAtZero:true}});
+
+function bar(id, labels, values, {horizontal=false, unit="%", label="", decimals=1}={}){
+  const c = new Chart(document.getElementById(id), {
+    type:"bar",
+    data:{labels:labels.map(tr), datasets:[{label, data:values, borderRadius:4, borderSkipped:false, maxBarThickness:28,
+      backgroundColor:()=>css("--s1"), hoverBackgroundColor:()=>css("--s1")}]},
+    options:{indexAxis:horizontal?"y":"x", responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:t=>` ${fmt(t.raw,decimals)}${unit}`}}}, scales:axes(horizontal)}
+  });
+  charts.push(c);
+}
+function bar2(id, labels, a, b, la, lb){
+  const c = new Chart(document.getElementById(id), {
+    type:"bar",
+    data:{labels, datasets:[
+      {label:la, data:a, borderRadius:4, borderSkipped:false, maxBarThickness:22, backgroundColor:()=>css("--s1")},
+      {label:lb, data:b, borderRadius:4, borderSkipped:false, maxBarThickness:22, backgroundColor:()=>css("--s2")}]},
+    options:{responsive:true, maintainAspectRatio:false, animation:false, datasets:{bar:{categoryPercentage:.7, barPercentage:.9}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:t=>` ${t.dataset.label}: ${fmt(t.raw,1)} %`}}}, scales:axes(false)}
+  });
+  charts.push(c);
+}
+function hist(id, counts, unidad){
+  const labels = counts.map((_,i)=>`${i*10}–${i*10+10}%`);
+  const c = new Chart(document.getElementById(id), {
+    type:"bar",
+    data:{labels, datasets:[{data:counts, borderRadius:3, borderSkipped:false,
+      backgroundColor:counts.map((_,i)=> i>=6 ? css("--crit") : i>=3 ? css("--warn") : css("--good"))}]},
+    options:{responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{title:t=>`Puntaje ${t[0].label}`, label:t=>` ${fmt(t.raw)} ${unidad}`}}},
+      scales:{x:{grid:{display:false}, ticks:{color:()=>css("--muted"), maxRotation:0, autoSkip:true}},
+              y:{grid:{color:()=>css("--grid")}, border:{display:false}, ticks:{color:()=>css("--muted")}}}}
+  });
+  charts.push(c);
+}
+function segBar(id, seg){
+  const total = seg.Alto + seg.Medio + seg.Bajo;
+  const parts = [["Alto","--crit","▲"],["Medio","--warn","◆"],["Bajo","--good","▼"]];
+  document.getElementById(id).innerHTML =
+    `<div class="seg">${parts.map(([k,v])=>`<div title="${k}: ${fmt(seg[k])}" style="flex:${seg[k]};background:var(${v})"></div>`).join("")}</div>
+     <div class="legend">${parts.map(([k,v,ic])=>`<span class="badge"><span class="dot" style="background:var(${v})"></span>${ic} ${k}: ${fmt(seg[k])} (${fmt(seg[k]/total*100,1)} %)</span>`).join("")}</div>`;
+}
+function metTable(id, m){
+  const rows = Object.entries(m.resultados);
+  document.getElementById(id).innerHTML =
+    `<tr><th>Modelo</th><th class="num">AUC CV</th><th class="num">AUC prueba</th><th class="num">Precisión</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Lift 10 %</th></tr>` +
+    rows.map(([k,r])=>`<tr class="${k===m.mejor_modelo?"best":""}"><td>${k}${k===m.mejor_modelo?" ★":""}</td>
+      <td class="num">${fmt(r.cv_auc_media,3)} ± ${fmt(r.cv_auc_std,3)}</td><td class="num">${fmt(r.roc_auc,3)}</td>
+      <td class="num">${fmt(r.precision*100,1)} %</td><td class="num">${fmt(r.recall*100,1)} %</td>
+      <td class="num">${fmt(r.f1,3)}</td><td class="num">${fmt(r.lift_top10,2)}×</td></tr>`).join("");
+}
+const riskBadge = p => p >= .6 ? `<span class="badge"><span class="dot" style="background:var(--crit)"></span>▲ Alto</span>`
+  : p >= .3 ? `<span class="badge"><span class="dot" style="background:var(--warn)"></span>◆ Medio</span>`
+  : `<span class="badge"><span class="dot" style="background:var(--good)"></span>▼ Bajo</span>`;
+
+// ---------- SABER 11 ----------
+const S = DATA.saber11, SM = MET.saber11, sb = SM.resultados[SM.mejor_modelo];
+document.getElementById("s-model").textContent = `Modelo seleccionado: ${SM.mejor_modelo} (AUC ${fmt(sb.roc_auc,3)} en 2022)`;
+kpis("s-kpis", [
+  ["Estudiantes analizados", fmt(S.kpis.estudiantes), "2019–2022, sin duplicados"],
+  ["Con bajo desempeño", fmt(S.kpis.tasa_bajo,1)+" %", "puntaje global < 220"],
+  ["Puntaje global promedio", fmt(S.kpis.puntaje_medio,1), "escala de 0 a 500"],
+  ["Colegios", fmt(S.kpis.colegios), `en ${S.kpis.municipios} municipios`],
+  ["Estudiantes 2022 en riesgo alto", fmt(S.kpis.alto_riesgo_prueba), `de ${fmt(S.kpis.estudiantes_prueba)} evaluados`],
+  ["Recall del modelo", fmt(sb.recall*100,1)+" %", "de los de bajo desempeño, se detectan"],
+]);
+bar("s-estrato", S.por_estrato.labels, S.por_estrato.tasa);
+const br = [["OFICIAL","NO OFICIAL"].map(k=>[tr(k)+" (colegio)", S.por_naturaleza.tasa[S.por_naturaleza.labels.indexOf(k)]]),
+            ["RURAL","URBANO"].map(k=>[tr(k), S.por_area.tasa[S.por_area.labels.indexOf(k)]]),
+            S.por_conectividad.labels.map((k,i)=>[k, S.por_conectividad.tasa[i]])].flat();
+bar("s-brechas", br.map(x=>x[0]), br.map(x=>x[1]), {horizontal:true});
+bar("s-madre", S.por_educacion_madre.labels, S.por_educacion_madre.tasa, {horizontal:true});
+bar("s-jornada", S.por_jornada.labels, S.por_jornada.tasa, {horizontal:true});
+bar2("s-mun", S.municipios.labels, S.municipios.prob, S.municipios.real, "Riesgo promedio estimado", "% real de bajo desempeño");
+bar("s-imp", S.importancias.labels, S.importancias.valores, {horizontal:true, unit:"", decimals:4});
+segBar("s-seg", S.segmentos); hist("s-hist", S.hist_prob, "estudiantes"); metTable("s-met", SM);
+document.getElementById("s-top").innerHTML =
+  `<tr><th>Colegio</th><th>Municipio</th><th>Tipo</th><th>Zona</th><th class="num">Evaluados</th><th class="num">Riesgo promedio</th><th>Nivel</th><th class="num">% en riesgo alto</th><th class="num">% real bajo desemp.</th><th class="num">Puntaje medio</th></tr>` +
+  S.top_colegios.map(r=>`<tr><td>${title(r.cole_nombre_establecimiento).replace(/^(Instituci[oó]n Educativa|Ie)\s/i,"I.E. ")}</td><td>${title(r.cole_mcpio_ubicacion)}</td>
+    <td>${tr(r.cole_naturaleza)}</td><td>${tr(r.cole_area_ubicacion)}</td><td class="num">${r.estudiantes}</td>
+    <td class="num">${fmt(r.prob_media*100,1)} %</td><td>${riskBadge(r.prob_media)}</td><td class="num">${fmt(r.pct_alto*100,0)} %</td>
+    <td class="num">${fmt(r.pct_bajo_real*100,0)} %</td><td class="num">${fmt(r.puntaje_medio)}</td></tr>`).join("");
+
+// ---------- VÍCTIMAS ----------
+const V = DATA.victimas, VM = MET.victimas, vb = VM.resultados[VM.mejor_modelo];
+document.getElementById("v-model").textContent = `Modelo seleccionado: ${VM.mejor_modelo} (AUC ${fmt(vb.roc_auc,3)} en 2023–2026)`;
+kpis("v-kpis", [
+  ["Víctimas registradas", fmt(V.kpis.victimas), "2010 – julio 2026"],
+  ["Personas fallecidas", fmt(V.kpis.fallecidos), `en ${V.kpis.municipios} municipios`],
+  ["Letalidad", fmt(V.kpis.letalidad,2)+" %", "de cada 100 víctimas, fallecen"],
+  ["Víctimas 2023–2026 evaluadas", fmt(V.kpis.victimas_prueba), `${fmt(V.kpis.fallecidos_prueba)} fallecidas`],
+  ["Víctimas en riesgo alto", fmt(V.kpis.alto_riesgo_prueba), `concentran ${fmt(V.kpis.fallecidos_en_alto)} muertes`],
+  ["Lift en el 10 % superior", fmt(vb.lift_top10,2)+"×", "más muertes que al azar"],
+]);
+bar("v-anual", V.anual.labels, V.anual.fallecidos, {unit:" fallecidos", decimals:0});
+bar("v-depto", V.por_departamento.labels, V.por_departamento.tasa);
+bar("v-medio", V.por_medio.labels, V.por_medio.tasa);
+bar("v-dia", V.por_dia.labels, V.por_dia.tasa);
+const pf = [...V.por_genero.labels.map((k,i)=>[k, V.por_genero.tasa[i]]), ...V.por_grupo.labels.map((k,i)=>[k, V.por_grupo.tasa[i]]),
+            ...V.por_festivo.labels.map((k,i)=>["Día "+k.toLowerCase(), V.por_festivo.tasa[i]])];
+bar("v-perfil", pf.map(x=>x[0]), pf.map(x=>x[1]), {horizontal:true});
+bar("v-mun", V.municipios.labels, V.municipios.tasa);
+bar("v-imp", V.importancias.labels, V.importancias.valores, {horizontal:true, unit:"", decimals:4});
+segBar("v-seg", V.segmentos); hist("v-hist", V.hist_prob, "víctimas"); metTable("v-met", VM);
+document.getElementById("v-top").innerHTML =
+  `<tr><th>Medio</th><th>Género</th><th>Grupo etario</th><th>Municipio</th><th>Momento</th><th class="num">Víctimas</th><th class="num">Puntaje de riesgo</th><th>Nivel</th><th class="num">Letalidad real</th></tr>` +
+  V.perfiles.map(r=>`<tr><td>${r.medio}</td><td>${r.genero}</td><td>${r.grupo_etario}</td><td>${r.tipo_municipio}</td><td>${r.momento}</td>
+    <td class="num">${fmt(r.victimas)}</td><td class="num">${fmt(r.prob_media,2)}</td><td>${riskBadge(r.prob_media)}</td>
+    <td class="num">${fmt(r.letalidad_real*100,1)} %</td></tr>`).join("");
+
+// ---------- Pestañas y tema ----------
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x===b));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("on", p.id==="p-"+b.dataset.p));
+  charts.forEach(c => c.resize());
+}));
+document.getElementById("themeBtn").addEventListener("click", () => {
+  const dark = document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.dataset.theme = dark ? "light" : "dark";
+  charts.forEach(c => c.update());
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Datos: públicos, pesados y actualizables -> se bajan con scripts/00_descargar_datos.py
+data/
+
+# Modelos entrenados y salidas regenerables
+outputs/*.joblib
+outputs/tablero.html
+outputs/tablero_datos.json
+
+# Contiene una lista de colegios con nombre propio: no se publica
+outputs/img/saber_3.jpg
+
+# Material del curso que no hace parte del proyecto público
+*.docx
+GUIA_DEL_TRABAJO.md
+scripts/04_generar_documento.js
+_version_anterior_telco_hoteles/
+
+# Python y sistema
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+desktop.ini
+Thumbs.db

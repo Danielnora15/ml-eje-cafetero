@@ -1,0 +1,61 @@
+{
+  "saber11": {
+    "registros_originales": 107560,
+    "columnas_originales": 31,
+    "periodos": {
+      "20191": 348,
+      "20194": 55246,
+      "20201": 413,
+      "20211": 503,
+      "20221": 536,
+      "20224": 50514
+    },
+    "nulos_por_columna": {
+      "cole_bilingue": 13040,
+      "cole_caracter": 1667,
+      "estu_genero": 12,
+      "estu_mcpio_reside": 28,
+      "estu_depto_reside": 28,
+      "fami_cuartoshogar": 3570,
+      "fami_educacionmadre": 5395,
+      "fami_educacionpadre": 5406,
+      "fami_estratovivienda": 5835,
+      "fami_personashogar": 3411,
+      "fami_tieneautomovil": 3672,
+      "fami_tienecomputador": 3499,
+      "fami_tieneinternet": 5438,
+      "fami_tienelavadora": 3415,
+      "punt_ingles": 87
+    },
+    "eliminados_puntaje_invalido": 2,
+    "duplicados_exactos": 52938,
+    "edades_invalidas_imputadas": 173,
+    "registros_finales": 54620,
+    "columnas_finales": 43,
+    "tasa_bajo_desempeno": 0.2782,
+    "umbral_bajo_desempeno": 220,
+    "colegios": 575,
+    "municipios": 53,
+    "nulos_finales": 0
+  },
+  "victimas": {
+    "registros_lesionados": 54499,
+    "registros_fallecidos": 5618,
+    "registros_originales": 60117,
+    "registros_con_cantidad_mayor_1": 19166,
+    "victimas_tras_expandir": 92963,
+    "fechas_invalidas": 0,
+    "eliminados_medio_no_vial": 41,
+    "eliminados_sin_genero": 159,
+    "registros_finales": 92763,
+    "columnas_finales": 17,
+    "fallecidos": 5606,
+    "tasa_letalidad": 0.0604,
+    "rango_fechas": [
+      "2010-01-01",
+      "2026-07-31"
+    ],
+    "municipios": 53,
+    "nulos_finales": 0
+  }
+}
